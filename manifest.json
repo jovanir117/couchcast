@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "TV Cast",
+  "version": "0.4.0",
+  "description": "Send the video on this page to the Samsung TV (YouTube app or DLNA), it plays on the TV itself.",
+  "action": { "default_popup": "popup.html", "default_title": "Send to TV" },
+  "permissions": ["activeTab", "scripting", "storage", "cookies"],
+  "host_permissions": ["<all_urls>"]
+}

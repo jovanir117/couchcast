@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --bg: #111418; --card: #1b2027; --fg: #e8eaed; --muted: #9aa0a6; --line: #2a2f36; --accent: #3b82f6; --ok: #34d399; --warn: #fbbf24; --err: #f87171; }
+  body { margin: 0; width: 320px; background: var(--bg); color: var(--fg); font: 13px/1.4 system-ui, sans-serif; }
+  main { padding: 14px; display: grid; gap: 10px; }
+  header { display: flex; justify-content: space-between; align-items: center; }
+  h1 { font-size: 14px; margin: 0; }
+  #tv { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+  #tv::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  #tv.on::before { background: var(--ok); }
+  #tv.standby::before { background: var(--warn); }
+  #tv.off::before { background: var(--err); }
+  ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+  button { min-height: 36px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); padding: 6px 10px; cursor: pointer; font: inherit; }
+  button:hover:not(:disabled), button:focus-visible { border-color: var(--accent); outline: none; }
+  button:disabled { opacity: .5; cursor: default; }
+  li button { width: 100%; text-align: left; }
+  #go { width: 100%; min-height: 52px; background: var(--accent); border-color: var(--accent); font-size: 15px; font-weight: 600; }
+  #go:hover:not(:disabled), #go:focus-visible { border-color: #93c5fd; }
+  #go .kind { color: rgba(255, 255, 255, .8); text-align: center; }
+  .kind { color: var(--muted); font-size: 11px; font-weight: 400; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  details summary { color: var(--muted); cursor: pointer; font-size: 12px; }
+  .row { display: flex; gap: 6px; }
+  .row button { flex: 1; font-size: 15px; }
+  .row .sep { width: 1px; background: var(--line); }
+  #status { color: var(--muted); min-height: 1.4em; margin: 0; }
+  #status.err { color: var(--err); }
+  #status.busy::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px;
+    border: 2px solid var(--muted); border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Mandar a la tele</h1>
+    <span id="tv">Buscando…</span>
+  </header>
+  <button id="power" hidden>⏻ Prender la tele</button>
+  <button id="go" hidden></button>
+  <details id="more" hidden>
+    <summary>Otras opciones</summary>
+    <ul id="list"></ul>
+  </details>
+  <div class="row" id="controls" aria-label="Controles de la tele">
+    <button data-cmd="Pause" title="Pausa">⏸</button>
+    <button data-cmd="Play" title="Play">▶</button>
+    <button data-cmd="Stop" title="Detener">⏹</button>
+    <span class="sep"></span>
+    <button data-vol="-3" title="Bajar volumen">−</button>
+    <button data-vol="3" title="Subir volumen">+</button>
+  </div>
+  <p id="status" role="status"></p>
+</main>
+<script src="popup.js"></script>
+</body>
+</html>
