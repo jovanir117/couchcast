@@ -54,15 +54,31 @@ function wake(mac, tv) {
   });
 }
 
+// The relay must not become a door into this PC: of its own addresses it only hands out the camera
+// streams (go2rtc on 1984, whose API has no password). Anything else on the internet or the LAN is fine.
+const PROPIA = /^(localhost|127\.\d+\.\d+\.\d+|\[::1\]|0\.0\.0\.0)$/i;
+function permitido(target) {
+  let u;
+  try { u = new URL(target); } catch { return false; }
+  if (!/^https?:$/.test(u.protocol)) return false;
+  if (!PROPIA.test(u.hostname)) return true;
+  return u.port === '1984' && /^\/api\/(stream\.m3u8|hls\/)/.test(u.pathname);
+}
+
 async function upstream(url, headers, req) {
   const h = { ...headers };
   if (req.headers.range) h.range = req.headers.range; // seeking in plain .mp4
-  for (let i = 0; ; i++) {
+  // Redirects followed by hand: a site must not bounce us onto this PC
+  for (let i = 0, saltos = 0; ;) {
+    if (!permitido(url)) throw new Error('blocked: ' + url.slice(0, 80));
     try {
-      const res = await fetch(url, { headers: h, redirect: 'follow', signal: AbortSignal.timeout(15000) });
-      if (res.status >= 500 && i === 0) continue; // CDNs hiccup; one retry
+      const res = await fetch(url, { headers: h, redirect: 'manual', signal: AbortSignal.timeout(15000) });
+      const destino = res.status >= 300 && res.status < 400 && res.headers.get('location');
+      if (destino && saltos++ < 5) { res.body?.cancel().catch(() => {}); url = new URL(destino, url).href; continue; }
+      if (res.status >= 500 && i++ === 0) continue; // CDNs hiccup; one retry
+      Object.defineProperty(res, 'final', { value: url }); // where the playlist really came from (relative URIs)
       return res;
-    } catch (e) { if (i > 0) throw e; }
+    } catch (e) { if (i++ > 0 || /^blocked/.test(e.message)) throw e; }
   }
 }
 
@@ -80,6 +96,7 @@ const server = http.createServer(async (req, res) => {
       let body = '';
       for await (const c of req) body += c;
       const { url: target, headers = {}, tv } = JSON.parse(body);
+      if (!permitido(target)) { log('blocked', String(target).slice(0, 80)); res.writeHead(403).end(); return; }
       const ip = await lanIp(tv);
       // Try it before handing it to the TV: a site that refuses us too would only show up as a vague 716 there
       const probe = await upstream(target, headers, { headers: {} }).catch(() => null);
@@ -114,7 +131,7 @@ const server = http.createServer(async (req, res) => {
     const [, id] = url.pathname.split('/');
     const s = sessions.get(id);
     const target = url.searchParams.get('u');
-    if (!s || !target || !/^https?:/.test(target)) { res.writeHead(404).end(); return; }
+    if (!s || !target || !permitido(target)) { res.writeHead(404).end(); return; }
     s.seen = Date.now();
 
     const up = await upstream(target, s.headers, req);
@@ -123,7 +140,7 @@ const server = http.createServer(async (req, res) => {
       const text = await up.text();
       if (!up.ok || !text.startsWith('#EXTM3U')) { log('playlist', up.status, new URL(target).host); res.writeHead(up.ok ? 502 : up.status).end(); return; }
       res.writeHead(200, { 'Content-Type': 'application/vnd.apple.mpegurl', 'Cache-Control': 'no-cache' })
-        .end(rewrite(text, up.url || target, id, `http://${req.headers.host}`));
+        .end(rewrite(text, up.final || target, id, `http://${req.headers.host}`));
       return;
     }
     const out = { 'Content-Type': type || 'application/octet-stream' };
@@ -155,6 +172,10 @@ if (process.argv[2] === '--selftest') {
   check(local('::ffff:192.168.1.20') && local('127.0.0.1') && !local('8.8.8.8'), 'lan filter');
   const pkt = magic('AA:BB:CC:DD:EE:FF');
   check(pkt.length === 102 && pkt.subarray(0, 6).every((b) => b === 0xff) && pkt.subarray(96).toString('hex') === 'aabbccddeeff', 'magic packet');
+  check(permitido('https://cdn.example.com/live/a.m3u8') && permitido('http://192.168.1.50/v.mp4'), 'internet and LAN allowed');
+  check(permitido('http://127.0.0.1:1984/api/stream.m3u8?src=cam1') && permitido('http://127.0.0.1:1984/api/hls/playlist.m3u8?id=x'), 'camera streams allowed');
+  check(!permitido('http://127.0.0.1:1984/api/streams') && !permitido('http://127.0.0.1:3001/api/alerts') && !permitido('http://localhost:8724/estado'), 'rest of this PC blocked');
+  check(!permitido('file:///C:/x') && !permitido('http://[::1]:1984/api/config'), 'other schemes and ::1 blocked');
   console.log('selftest ok');
   process.exit(0);
 }
