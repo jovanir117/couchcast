@@ -1,4 +1,4 @@
-' Starts the TV Cast relay hidden and brings it back if it dies. Exit 0 = another copy already runs.
+' Starts the Couchcast relay hidden and brings it back if it dies. Exit 0 = another copy already runs.
 Set sh = CreateObject("WScript.Shell")
 dir = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
 Do

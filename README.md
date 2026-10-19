@@ -1,32 +1,38 @@
-# TV Cast
+# Couchcast
 
-Extensión de Chrome que manda el video de la página a una tele Samsung (Tizen) por la red de la casa. La tele lo reproduce con su propio reproductor: fluido y a calidad completa, sin duplicar la pantalla.
+A Chrome extension that sends the video on the current page to a Samsung smart TV (Tizen) over your home network. The TV plays it with its own player: smooth, full quality, and without mirroring your screen.
 
-- **YouTube**: abre el video en la app de YouTube de la tele (DIAL), en el mismo segundo.
-- **Otros sitios**: busca el video que está sonando (también dentro de iframes) y se lo pasa a la tele por DLNA. Con HLS elige la mejor calidad de entrada.
-- **Sin configurar nada**: encuentra la tele en la red y la vuelve a encontrar si el router le cambia la IP.
-- **Controles**: pausa, play, detener, volumen y prender la tele.
+- **YouTube**: opens the video in the TV's YouTube app (DIAL), at the same second.
+- **Other sites**: finds the video that is playing (iframes included) and hands it to the TV over DLNA. For HLS streams it picks the best quality from the start, and falls back through the other qualities when the TV refuses one.
+- **No setup**: finds the TV on the network, and finds it again when the router gives it a new IP.
+- **Remote**: pause, play, stop, volume, and turn the TV on.
 
-## Instalar
+> The interface is in Spanish.
 
-1. `chrome://extensions` → activa *Modo de desarrollador* → *Cargar descomprimida* → esta carpeta.
-2. Abre una página con video, dale play y pica el ícono de TV Cast.
+## Install
 
-## Relay en la PC (opcional)
+1. Open `chrome://extensions`, turn on **Developer mode**, **Load unpacked**, and pick this folder.
+2. Open a page with a video, press play, and click the Couchcast icon.
 
-Algunos sitios solo le dan el video a un navegador (revisan Referer, Origin o cookies). El relay corre en la PC, pide el video con los datos del navegador y se lo pasa a la tele tal cual, sin recodificar. También manda el paquete Wake-on-LAN para prender la tele desde el popup.
+## PC relay (optional)
+
+Some sites only serve the video to a browser (they check the Referer, the Origin or cookies). The relay runs on your PC, fetches the video with the browser's headers and passes it to the TV untouched, with no transcoding. It also sends the Wake-on-LAN packet that turns the TV on from the popup.
 
 ```
-node relay/relay.js            # escucha en el puerto 8723, solo acepta la red local
+node relay/relay.js              # listens on port 8723, local network only
 node relay/relay.js --selftest
 ```
 
-En Windows, `relay/iniciar.vbs` lo arranca oculto y lo reinicia si se cae; pon un acceso directo en la carpeta de Inicio para que arranque solo.
+On Windows, `relay/iniciar.vbs` starts it hidden and restarts it if it dies; put a shortcut to it in the Startup folder to run it at login.
 
-Para prender la tele desde el popup, en la tele activa *Encender con dispositivo móvil* (Ajustes › General › Red › Ajustes de expertos) y préndela una vez con el control para que la extensión aprenda su MAC.
+To turn the TV on from the popup, enable **Power on with mobile** on the TV (Settings › General › Network › Expert Settings), and turn the TV on once with the remote so the extension learns its MAC address.
 
-## Límites
+## Limits
 
-- Sitios con DRM (Netflix, Disney+…) no dan un archivo de video: usa su app en la tele.
-- Algunos sitios solo entregan el video a Chrome (huella TLS); ni el relay puede sacarlo.
-- Probado con una Samsung OLED con Tizen; otras teles DLNA deberían servir para el video, no para el estado ni el encendido.
+- DRM sites (Netflix, Disney+…) never expose a video file: use their TV app.
+- Some sites only hand the video to Chrome itself (TLS fingerprinting); not even the relay can get it.
+- Tested with a Samsung OLED running Tizen. Other DLNA TVs should play the video, but not report their state or wake up.
+
+## License
+
+MIT

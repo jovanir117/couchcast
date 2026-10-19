@@ -1,4 +1,4 @@
-// TV Cast relay: the TV asks this PC for the video, this PC asks the site with the browser's headers.
+// Couchcast relay: the TV asks this PC for the video, this PC asks the site with the browser's headers.
 // Sites that gate on Referer/Origin/cookies then serve the TV too. Bytes pass through untouched (no transcoding).
 const http = require('http');
 const dgram = require('dgram');
